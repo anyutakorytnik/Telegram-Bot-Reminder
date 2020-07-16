@@ -1,0 +1,5 @@
+*.db
+.vsls.json
+token
+__pycache__
+.vscode
