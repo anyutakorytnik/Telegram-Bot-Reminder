@@ -54,6 +54,8 @@ def left_action(call):
     # message.from_user.id == call.message.chat.id
     ind = get_watch_note_index(call.message.chat.id) - 1
     size = len(get_list_of_notes(call.message.chat.id))
+    if size == 1:
+        return
     if ind < 0:
         ind = size - 1
     edit_watch_note_index(call.message.chat.id, ind)
@@ -66,6 +68,8 @@ def left_action(call):
 def right_action(call):
     ind = get_watch_note_index(call.message.chat.id) + 1
     size = len(get_list_of_notes(call.message.chat.id))
+    if size == 1:
+        return
     if ind >= size:
         ind = 0
     edit_watch_note_index(call.message.chat.id, ind)
@@ -184,12 +188,12 @@ def menu_handler(message):
     global config
     user_id = message.from_user.id
 
-    if message.text == "ADD":
+    if message.text == config["add_key"]:
         # bot.delete_message(message.chat.id, message.message_id)
         set_user_action(user_id, "add_date_request")
         bot.send_message(
             message.chat.id, config["add_date_request"], reply_markup=cancel_markup())
-    elif message.text == "LIST":
+    elif message.text == config["list_key"]:
         # bot.delete_message(message.chat.id, message.message_id)
         msg = list_from_menu(message)
         if msg == '':
@@ -198,7 +202,7 @@ def menu_handler(message):
             return
         bot.send_message(message.chat.id, config["welcome_list"], reply_markup=cancel_markup())
         bot.send_message(message.chat.id, msg, reply_markup=list_markup())
-    elif message.text == "CANCEL":
+    elif message.text == config["cancel_key"]:
         # bot.delete_message(message.chat.id, message.message_id - 2)
         # bot.delete_message(message.chat.id, message.message_id - 1)
         # bot.delete_message(message.chat.id, message.message_id)
@@ -222,6 +226,7 @@ def welcome(message):
         bot.send_message(message.chat.id, config["hello_again_message"], reply_markup=menu_markup())
     else:
         create_user_in_db(user.id)
+        bot.send_message(message.chat.id, config["start_message"])
 
 @bot.message_handler(content_types=['text'])
 def handle_message(message):
@@ -262,7 +267,7 @@ def conditonal_send_message(note_id):
     msg = get_note_by_id(note_id)
     if msg is not None:
         tz = try_get_user_timezone(msg[1])
-        dt = datetime.datetime(msg[2]) + datetime.timedelta(minutes=tz)
+        dt = dateutil.parser.parse(msg[2]) + datetime.timedelta(minutes=tz)
         bot.send_message(int(msg[1]), str(dt) + '\n' + msg[3])
         delete_note_from_db(note_id)
 
